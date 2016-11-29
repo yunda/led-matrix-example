@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+    <head>
+        <title>128x32 LED MATRIX</title>
+    </head>
+    <body>
+        <h2>Matrix</h2>
+        <canvas id="matrix-canvas" style="border: 1px solid black" width="1280" height="320"></canvas>
+        <h2>Image preview</h2>
+        <img id="matrix-image" src="" style="border: 1px solid black" width="128" />
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.2/lodash.min.js"></script>
+        <script>
+            var socket = io();
+            var image = document.getElementById('matrix-image');
+            var canvas = document.getElementById('matrix-canvas');
+            var ctx = canvas.getContext('2d');
+            var width = 128;
+            var height = 32;
+            var pixelSize = 10;
+
+            socket.on('matrix redraw', function (frame){
+                console.log('matrix redraw: ', frame);
+                image.src = frame.dataUrl;
+
+                var imageData = Object.values(frame.imageData.data);
+
+                var pixels = _.times(imageData.length / 4, function () {
+                    var rgb = _.take(imageData, 4);
+
+                    imageData = _.drop(imageData, 4);
+
+                    return rgb;
+                });
+
+                var matrix = _.times(height, function () {
+                    var row = _.take(pixels, width);
+
+                    pixels = _.drop(pixels, width);
+
+                    return row;
+                });
+
+                _.each(matrix, function (row, rowIndex) {
+                    _.each(row, function (pixel, pixelIndex) {
+                        ctx.fillStyle = 'rgba(' + pixel[0] + ',' + pixel[1] + ',' + pixel[2] + ',' + (pixel[3] / 255) + ')';
+                        ctx.fillRect(pixelIndex * pixelSize, rowIndex * pixelSize, pixelSize, pixelSize);
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
